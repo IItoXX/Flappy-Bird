@@ -15,6 +15,11 @@ class Game:
         # Redimensionner des images dans le jeux (Ajuster la taille )
         self.scale_factor=1.5
 
+        self.font = pg.font.Font("assets/font.ttf", 24) # Police d'écriture utiliser 
+        self.best_score = self.loadBestScore()  # Charger le meilleur score au du demarrage du jeu
+        self.best_score_text = self.font.render(f"Best Score: {self.best_score}", True, (255, 255, 255))
+        self.best_score_text_rect = self.best_score_text.get_rect(topright=(self.width - 10, 10))
+
 
         self.win = pg.display.set_mode((self.width, self.height))  # Création de la fenetres de jeu de la taille spécifié 
 
@@ -59,11 +64,11 @@ class Game:
     def runMenu(self):
         menu_font = pg.font.Font("assets/font.ttf", 48)   # écriture de police du Menu
         title_text = menu_font.render("Flappy Bird", True, (255, 255, 255))  # écriture du texte et sont positionnement et couleur
-        title_rect = title_text.get_rect(center=(self.width // 2, self.height // 4))  # Centre le texte 
+        title_rect = title_text.get_rect(center=(self.width // 2, self.height // 4))  # Centre le texte
 
         start_button_font = pg.font.Font("assets/font.ttf", 36)  # Pareil police d'écriture et taille de la police
         start_button_text = start_button_font.render("Start A Game", True, (255, 255, 255))  # écriture 
-        start_button_rect = start_button_text.get_rect(center=(self.width // 2, self.height // 2))  # centrer le texte 
+        start_button_rect = start_button_text.get_rect(center=(self.width // 2, self.height // 2))  # centrer le texte
 
         while True:  # Boucle principale 
             for event in pg.event.get(): 
@@ -79,8 +84,11 @@ class Game:
             pg.draw.rect(self.win, (0, 128, 255), start_button_rect)   # Cette ligne dessine un rectangle (bouton "Start") sur la surface de la fenêtre + couleur 
             self.win.blit(start_button_text, start_button_rect)  # Dessin du bouton start sur la surface du jeu 
 
+            self.win.blit(self.best_score_text, self.best_score_text_rect) # Correction ici
+
             pg.display.update()  # Met a jours l'affichage pour tout les dessins effectuées sur la fenetre de jeu 
             self.clock.tick(60) # Controle la vitesse de la boucle pour limiter le nombre d"itération par seconde (économie des ressources process et jeux plus fluide visuellement)
+
 
 
 
@@ -94,6 +102,7 @@ class Game:
 
             for event in pg.event.get():  # Attend l'évenement 
                 if event.type == pg.QUIT: # Condition qui vérifie si l'evenement est en cours de traitement 
+                    self.sauvegardeBestScore()
                     pg.quit() # Si l'événement "QUIT" est détecté, cette ligne appelle pg.quit(), qui est une fonction de Pygame permettant de quitter proprement le module Pygame
                     sys.exit() # Cette ligne utilise la fonction sys.exit() du module sys pour quitter complètement le programme. 
                 if event.type==pg.KEYDOWN and self.is_game_started:  # vérifie sur la touche du clavier est enfoncé et que game started est True 
@@ -126,6 +135,11 @@ class Game:
         self.pipes.clear() # efface tout les tuyaux de la cartes 
         self.pipe_generate_counter = 71  # Renitialise le compteur de générateur des tuyaux 
         self.bird.update_on = False  # Desactive la mise a jours de l'oiseau  pour arreter sont mouvement 
+        self.best_score = self.loadBestScore()
+
+        if self.score > self.best_score:
+            self.best_score = self.score
+            self.sauvegardeBestScore()
 
 
     def checkScore(self):  # est responsable de vérifier si l'oiseau a réussi à passer à travers les tuyaux et d'ajuster le score en conséquence
@@ -144,7 +158,24 @@ class Game:
                 self.score_text = self.font.render(f"Score : {self.score}", True, (255,255,255)) # met a jours le score
                 self.pipe_sound.play()   # Son, gain de score +1
 
+                if self.score > self.best_score:
+                    self.best_score = self.score  # Mettre à jour le meilleur score
+                    self.best_score_text = self.font.render(f"Best Score: {self.best_score}", True, (255, 255, 255))  # Mettre à jour le texte du meilleur score
+                    self.best_score_text_rect = self.best_score_text.get_rect(topright=(self.width - 10, 10))  # Mettre à jour la position du texte du meilleur score
 
+                    self.sauvegardeBestScore()
+
+    def loadBestScore(self):
+        try:
+            with open("score.txt", "r") as file:
+                best_score = int(file.read())
+                return best_score
+        except FileNotFoundError:
+            return 0
+        
+    def sauvegardeBestScore(self):
+        with open("score.txt", "w") as file:
+            file.write(str(self.best_score))
 
     def checkCollisions(self):   # responsable de savoir si il y a collisions entre l'oiseau et les tuyaux 
         if self.is_game_started is False:
@@ -208,6 +239,14 @@ class Game:
         self.win.blit(self.ground2_img,self.ground2_rect) # pareil pour la deuxieme image du sol
         self.win.blit(self.bird.image,self.bird.rect) # dessine l'image de l'oiseau 
         self.win.blit(self.score_text, self.score_text_rect) # dessine le score
+        self.win.blit(self.best_score_text, self.best_score_text_rect)
+        if self.score == self.best_score:
+            best_score_text = self.font.render(f"Best Score: {self.best_score}", True, (255, 0, 0))
+            best_score_text_rect = best_score_text.get_rect(topright=(self.width - 10, 10))
+            self.win.blit(best_score_text, best_score_text_rect)
+        else:
+            self.win.blit(self.best_score_text, self.best_score_text_rect)
+
         if not self.is_game_started: # verifie si le jeu n'a pas encore commencé  si c'est le cas texte de redem est déssiné 
             self.win.blit(self.restart_text, self.restart_text_rect) # le texte de redémarrage  est déssiné a la position demander 
 
