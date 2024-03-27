@@ -147,16 +147,21 @@ class Game:
 
 
     def checkCollisions(self):   # responsable de savoir si il y a collisions entre l'oiseau et les tuyaux 
+        if self.is_game_started is False:
+            return
+        
         if len(self.pipes):  # verifie si la liste des tuyau contient au moins 1 tuyau si il est vide c'est ignorer
             if self.bird.rect.bottom > 568: # Verifie si le bas de l'oiseau est en dessous de la position du sol qui est de 568 pixel
                 self.bird.update_on = False # arret de la mise a jours de la position de l'oiseau
                 self.is_enter_pressed = False  # la touche Entrer n'est plus considérée comme enfoncée
                 self.is_game_started = False # le jeu n'est plus en cours et que le joueur a perdu.
+                self.death_sound.play()
                 
             if (self.bird.rect.colliderect(self.pipes[0].rect_down) or
             self.bird.rect.colliderect(self.pipes[0].rect_up)):  # verifie deux chose en mm temps si l'oiseau est en colision avec le tuyau inférieur ou du tuyau supérieur
                 self.is_enter_pressed = False  # la touche Entrer n'est plus considérée comme enfoncée
                 self.is_game_started = False  # le jeu n'est plus en cours et que le joueur a perdu.
+                self.death_sound.play()
                 
 
     def updateEverything(self,dt): # mise a jour des mouvement du sol et de l'oiseau dans le jeu
